@@ -2,6 +2,7 @@ package kisiel.jakub.websocketchat.server.textMessage;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -13,16 +14,12 @@ public class TextMessageController {
 
     Logger logger = LoggerFactory.getLogger(TextMessageController.class);
 
-//    @Autowired
-//    SimpUserRegistry userRegistry;
-
     @MessageMapping("/chat")
     @SendTo("/topic/messages")
-    public String textMessage(CustomMessage textMessage) throws InterruptedException, JsonProcessingException {
-        //ObjectMapper mapper = new ObjectMapper();
-
+    public String textMessage(String message) {
+        Gson gson = new Gson();
+        CustomMessage textMessage = gson.fromJson(message, CustomMessage.class);
         logger.info(textMessage.getText());
-        //return mapper.writeValueAsString(textMessage);
-        return textMessage.getText();
+        return gson.toJson(textMessage);
     }
 }

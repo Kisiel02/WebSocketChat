@@ -1,7 +1,7 @@
 package kisiel.jakub.websocketchat.server;
 
 import org.springframework.context.annotation.Configuration;
-import org.springframework.messaging.converter.MappingJackson2MessageConverter;
+import org.springframework.messaging.converter.GsonMessageConverter;
 import org.springframework.messaging.converter.MessageConverter;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
@@ -17,12 +17,12 @@ import static org.springframework.web.cors.CorsConfiguration.ALL;
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
-//    @Override
-//    public boolean configureMessageConverters(List<MessageConverter> messageConverters) {
-//        MappingJackson2MessageConverter converter = new MappingJackson2MessageConverter();
-//        messageConverters.add(converter);
-//        return false;
-//    }
+    @Override
+    public boolean configureMessageConverters(List<MessageConverter> messageConverters) {
+        GsonMessageConverter converter = new GsonMessageConverter();
+        messageConverters.add(converter);
+        return false;
+    }
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
@@ -32,8 +32,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/chat").withSockJS();
-        //registry.addEndpoint("/chat").setAllowedOrigins(ALL).withSockJS();
+        registry.addEndpoint("/chat").setAllowedOrigins(ALL);
     }
 }
 
