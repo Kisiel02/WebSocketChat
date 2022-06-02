@@ -25,7 +25,7 @@ public class ConnectionManager {
     }
 
     public void send(CustomMessage customMessage) {
-        this.stompSession.send("/app/chat", new Gson().toJson(customMessage));
+        this.stompSession.send("/app/chat/messages", new Gson().toJson(customMessage));
     }
 
     public void connect(int port) throws ExecutionException, InterruptedException {

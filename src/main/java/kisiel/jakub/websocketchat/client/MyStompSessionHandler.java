@@ -25,7 +25,7 @@ public class MyStompSessionHandler extends StompSessionHandlerAdapter {
         session.subscribe("/topic/messages", this);
         logger.info("Subscribed to /topic/messages");
         //session.send("/app/chat", getSampleMessage());
-        session.send("/app/chat", getSampleMessage());
+        session.send("/app/chat/config", getSampleMessage());
         logger.info("Message sent to websocket server");
     }
 

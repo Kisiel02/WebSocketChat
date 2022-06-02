@@ -68,7 +68,7 @@ public class ChatGuiController {
     }
 
     public void addLine(String line) {
-        messages.setText(messages.getText() + line);
+        messages.setText(messages.getText() + "\n" + line);
 
     }
 }
