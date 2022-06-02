@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Controller;
@@ -12,11 +13,28 @@ import org.springframework.stereotype.Controller;
 @Controller
 public class TextMessageController {
 
-    Logger logger = LoggerFactory.getLogger(TextMessageController.class);
+    private final Logger logger = LoggerFactory.getLogger(TextMessageController.class);
 
-    @MessageMapping("/chat")
+    private final TextMessageService service;
+
+    @Autowired
+    public TextMessageController(TextMessageService service) {
+        this.service = service;
+    }
+
+    @MessageMapping("/chat/messages")
     @SendTo("/topic/messages")
     public String textMessage(String message) {
+        Gson gson = new Gson();
+        CustomMessage textMessage = gson.fromJson(message, CustomMessage.class);
+        this.service.handleTextMessage(textMessage);
+        logger.info(textMessage.getText());
+        return gson.toJson(textMessage);
+    }
+
+    @MessageMapping("/chat/config")
+    @SendTo("/topic/messages")
+    public String connect(String message) {
         Gson gson = new Gson();
         CustomMessage textMessage = gson.fromJson(message, CustomMessage.class);
         logger.info(textMessage.getText());
