@@ -18,7 +18,8 @@ public class CustomMessage {
     public enum Type {
         TEXT,
         CONNECT,
-        INFO
+        INFO,
+        PUBLIC_KEY
     }
 
 }

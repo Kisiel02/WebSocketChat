@@ -3,20 +3,28 @@ package kisiel.jakub.websocketchat.client;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import kisiel.jakub.websocketchat.server.textMessage.CustomMessage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import java.util.concurrent.ExecutionException;
 
 
 @Component
 public class ChatGuiController {
 
     private final Logger logger = LogManager.getLogger(ChatGuiController.class);
+
+    @Value("${another.port}")
+    private int portAnother;
+
+    @Value("${server.port}")
+    private int portOwn;
 
     @Autowired
     private ConnectionManager connectionManager;
@@ -40,12 +48,13 @@ public class ChatGuiController {
     private TextArea messages;
 
     @FXML
-    public void connectButtonAction(ActionEvent event) {
+    public void connectButtonAction(ActionEvent event) throws ExecutionException, InterruptedException {
         try {
             int portNumber = Integer.parseInt(port.getText());
-            connectionManager.connect(portNumber);
+            connectionManager.initConnection(portNumber, portOwn);
         } catch (NumberFormatException e) {
-            logger.error("Wrong port number", e);
+            logger.info(portAnother);
+            connectionManager.initConnection(portAnother, portOwn);;
         } catch (Exception e) {
             this.messages.setText("Could not connect");
         }
@@ -57,7 +66,7 @@ public class ChatGuiController {
         CustomMessage customMessage = new CustomMessage(
                 text, CustomMessage.Type.TEXT
         );
-        this.connectionManager.send(customMessage);
+        this.connectionManager.sendMessage(customMessage);
         textField.clear();
     }
 
@@ -70,5 +79,9 @@ public class ChatGuiController {
     public void addLine(String line) {
         messages.setText(messages.getText() + "\n" + line);
 
+    }
+
+    public void notifyAboutConnection() {
+        this.addLine("Connected");
     }
 }
