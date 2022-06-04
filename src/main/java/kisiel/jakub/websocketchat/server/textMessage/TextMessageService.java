@@ -15,15 +15,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import javax.crypto.SecretKey;
-import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.SecretKeySpec;
-import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
-import java.security.spec.EncodedKeySpec;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 
 @Service
@@ -58,12 +51,11 @@ public class TextMessageService {
         this.chatGuiController.addLine(message.getText());
     }
 
-    public void handleConfigMessage(String message) throws NoSuchAlgorithmException, InvalidKeySpecException {;
+    public void handleConfigMessage(String message) throws NoSuchAlgorithmException, InvalidKeySpecException {
         ConfigDTO configDTO = gson.fromJson(message, ConfigDTO.class);
 
         if (configDTO.getType().equals(ConfigDTO.messageType.PUBLIC_KEY_AND_PORT)) {
             //First connection message, need to generate RSA keys and save received public key and connect back
-            //logger.info("Odebrałem " + configDTO.getPublicKey());
             this.securityManager.initializeSecurity("RSA", 1024);
             this.securityManager.saveForeignKey(configDTO);
             this.connectionManager.backConnection(configDTO.getPort(), securityManager.getPublicKey());
@@ -71,28 +63,13 @@ public class TextMessageService {
             //Received a back connection, need to send generated session key and store received public key
             this.securityManager.saveForeignKey(configDTO);
             this.connectionManager.exportSessionKey();
-        }
-        else if (configDTO.getType().equals(ConfigDTO.messageType.SESSION_KEY)) {
+        } else if (configDTO.getType().equals(ConfigDTO.messageType.SESSION_KEY)) {
             //Received session key, decrypt it and store
-            //byte[] encryptedSessionKey = configDTO.getSessionKey();
-            //logger.error("\nOdebrane bajty klucza sesji: " + encryptedSessionKey);
-            //logger.error("\nOdebrane bajty klucza sesji: " + configDTO.getSessionKey());
-            logger.error("\nOdebrany klucz sesji: " +  Base64.getEncoder().encodeToString(configDTO.getSessionKey()));
-            //this.securityManager.setSessionKeyFromBytes(this.securityManager.decrypt(encryptedSessionKey));
-//            this.securityManager.setSessionKeyFromBytes(
-//                Base64.getDecoder().decode(configDTO.getSessionKey()));
-            this.securityManager.setSessionKeyFromBytes(
-                configDTO.getSessionKey());
+            byte[] encryptedSessionKey = configDTO.getSessionKey();
+            String sessionKeyString = Base64.getEncoder().encodeToString(configDTO.getSessionKey());
+            logger.debug("\nReceived encrypted session key: {}", sessionKeyString);
+            byte[] decryptedSessionKey = this.securityManager.decrypt(encryptedSessionKey);
+            this.securityManager.setSessionKeyFromBytes(decryptedSessionKey);
         }
     }
-
-   /* public void handleSessionKey(String message) {
-        ConfigDTO configDTO = gson.fromJson(message, ConfigDTO.class);
-        byte[] sessionKeyEncrypted = configDTO.getSessionKey();
-        byte[] sessionKey = securityManager.decrypt(sessionKeyEncrypted);
-        securityManager.setSessionKeyFromBytes(sessionKey);
-
-    }*/
-
-
 }

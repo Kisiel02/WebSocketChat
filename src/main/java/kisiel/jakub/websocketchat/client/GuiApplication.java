@@ -21,7 +21,6 @@ public class GuiApplication extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
-       // ClassPathResource fxml = new ClassPathResource(");
         FXMLLoader loader = new FXMLLoader(getClass().getResource("ChatGUI.fxml"));
         loader.setControllerFactory(context::getBean);
         Parent root = loader.load();

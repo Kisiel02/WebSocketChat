@@ -62,7 +62,6 @@ public class ConnectionManager {
 
     public void sendConfig(ConfigDTO configDTO) {
         String message = gson.toJson(configDTO);
-        //logger.info("\n Wysyłam strina z configiem:\n" + message);
         this.stompSession.send(CONFIG_LOCATION, message);
     }
 
@@ -76,12 +75,6 @@ public class ConnectionManager {
             }
         }
     }
-
-/*    public void backConnection(int anotherPort, PublicKey publicKey, SecretKey sessionKey) {
-        if (anotherPort != 0 && connect(anotherPort)) {
-            exportPublicAndSessionKeys(publicKey, sessionKey);
-        }
-    }*/
 
     //Connect back to the sender of config message, export your public key
     public void backConnection(int anotherPort, PublicKey publicKey) {
@@ -107,18 +100,11 @@ public class ConnectionManager {
 
     public void exportSessionKey() {
         SecretKey sessionKey = this.securityManager.getSessionKey();
-        String sessionKeyString = Base64.getEncoder().encodeToString(sessionKey.getEncoded());
-        //logger.error("\nKlucz sesji przed enkrypcją: " + sessionKey.getEncoded());
-        logger.error("\nKlucz sesji przed enkrypcją: " + sessionKeyString);
         ConfigDTO configDTO = new ConfigDTO();
-        byte[] encryptedSessionKey =  this.securityManager.encrypt(sessionKey.getEncoded());
-        configDTO.setSessionKey(sessionKey.getEncoded());
-        //configDTO.setSessionKey(encryptedSessionKey);
-        //configDTO.setSessionKey(sessionKeyString);
+        byte[] encryptedSessionKey = this.securityManager.encrypt(sessionKey.getEncoded());
+        configDTO.setSessionKey(encryptedSessionKey);
         configDTO.setType(ConfigDTO.messageType.SESSION_KEY);
-        //logger.info("\nEksportuje klucz sesji: " + encryptedSessionKey);
-        //logger.info("\nEksportuje klucz sesji: " + sessionKey.getEncoded());
-        logger.info("\nEksportuje klucz sesji: " + sessionKeyString);
+        logger.debug("\nExporting encrypted session key: {}", Base64.getEncoder().encodeToString(encryptedSessionKey));
         sendConfig(configDTO);
     }
 
@@ -127,17 +113,8 @@ public class ConnectionManager {
         configDTO.setPublicKey(publicKey.getEncoded());
         configDTO.setPort(ownPort);
         configDTO.setType(ConfigDTO.messageType.PUBLIC_KEY_AND_PORT);
-        //logger.info("Wysyłam " + configDTO.getPublicKey());
         this.sendConfig(configDTO);
     }
-
-   /* private void exportPublicAndSessionKeys(PublicKey publicKey, SecretKey secretKey) {
-        ConfigDTO configDTO = new ConfigDTO();
-        configDTO.setPublicKey(publicKey.getEncoded());
-        configDTO.setSessionKey(secretKey.getEncoded());
-        this.stompSession.send(CONFIG_LOCATION, new Gson().toJson(
-            configDTO));
-    }*/
 
     private void exportPublicKey(PublicKey publicKey) {
         ConfigDTO configDTO = new ConfigDTO();

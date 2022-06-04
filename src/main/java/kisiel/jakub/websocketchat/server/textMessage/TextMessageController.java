@@ -37,7 +37,6 @@ public class TextMessageController {
     @SendTo("/topic/messages")
     public void config(String message) {
         try {
-            //logger.info("\nPrzyszedl string:\n" + message);
             this.service.handleConfigMessage(message);
         } catch (NoSuchAlgorithmException e) {
             logger.error("Wrong algorithm", e);
@@ -45,16 +44,4 @@ public class TextMessageController {
             e.printStackTrace();
         }
     }
-
-    /*@MessageMapping("/chat/sessionKey")
-    @SendTo("/topic/messages")
-    public void sessionKey(String message) {
-        try {
-            this.service.handleConfigMessage(message);
-        } catch (NoSuchAlgorithmException e) {
-            logger.error("Wrong algorithm", e);
-        } catch (InvalidKeySpecException e) {
-            e.printStackTrace();
-        }
-    }*/
 }

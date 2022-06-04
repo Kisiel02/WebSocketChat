@@ -20,14 +20,6 @@ public class MyStompSessionHandler extends StompSessionHandlerAdapter {
 
     private ChatGuiController chatGuiController;
 
-    //private SecurityManager securityManager;
-
-//    public MyStompSessionHandler(ChatGuiController chatGuiController, SecurityManager securityManager) {
-//        this.chatGuiController = chatGuiController;
-//        this.securityManager = securityManager;
-//    }
-
-
     public MyStompSessionHandler(ChatGuiController chatGuiController) {
         this.chatGuiController = chatGuiController;
     }

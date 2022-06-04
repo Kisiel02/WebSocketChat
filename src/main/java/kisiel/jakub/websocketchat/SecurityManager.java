@@ -1,6 +1,5 @@
 package kisiel.jakub.websocketchat;
 
-import kisiel.jakub.websocketchat.client.ConnectionManager;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -11,10 +10,14 @@ import org.springframework.stereotype.Component;
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
-import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
-import java.security.*;
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.spec.EncodedKeySpec;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
@@ -48,8 +51,7 @@ public class SecurityManager {
         KeyGenerator symmetricGenerator = KeyGenerator.getInstance(symmetricAlgorithm);
         symmetricGenerator.init(keySizeSym);
         this.sessionKey = symmetricGenerator.generateKey();
-        logger.info("Wygenerowano Session key:\n" +
-            Base64.getEncoder().encodeToString(this.sessionKey.getEncoded()));
+        logger.info("Session key: {}", Base64.getEncoder().encodeToString(sessionKey.getEncoded()));
     }
 
     @SneakyThrows
@@ -65,8 +67,7 @@ public class SecurityManager {
         KeyPair keyPair = asymmetricGenerator.generateKeyPair();
         this.privateKey = keyPair.getPrivate();
         this.publicKey = keyPair.getPublic();
-
-        logger.info("My public key in " + publicKey.getFormat() + "format:\n" + publicKey);
+        logger.info("App public key:\n {}", this.publicKey);
     }
 
     public void initializeSecurity(String asymmetricAlgorithm, int keySizeAsym, String symmetricAlgorithm, int keySizeSym) throws NoSuchAlgorithmException {
@@ -76,7 +77,7 @@ public class SecurityManager {
         this.privateKey = keyPair.getPrivate();
         this.publicKey = keyPair.getPublic();
         generateSessionKey(SESSION_CIPHER, SYMMETRIC_KEY_SIZE);
-        logger.info("My public key in " + publicKey.getFormat() + "format:\n" + publicKey);
+        logger.info("App public key:\n {}", getPublicKey());
     }
 
     @SneakyThrows
@@ -111,7 +112,7 @@ public class SecurityManager {
     @SneakyThrows
     public void setSessionKeyFromBytes(byte[] sessionKey) {
         this.sessionKey = new SecretKeySpec(sessionKey, 0, sessionKey.length, SESSION_CIPHER);
-        logger.info("Ustawiono session key:\n" +
+        logger.info("Session key set:\n {}",
             Base64.getEncoder().encodeToString(
             this.sessionKey.getEncoded()));
     }
@@ -120,9 +121,8 @@ public class SecurityManager {
         try {
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
             EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(configDTO.getPublicKey());
-            PublicKey foreignKey = keyFactory.generatePublic(publicKeySpec);
-            logger.info("New public key in " + foreignKey.getFormat() +  " format:\n" + foreignKey);
-            this.setForeignKey(foreignKey);
+            this.setForeignKey(keyFactory.generatePublic(publicKeySpec));
+            logger.debug("Foreign public key:\n {}", foreignKey);
         } catch (NoSuchAlgorithmException e) {
             logger.error("Wrong algorithm name", e);
         }
