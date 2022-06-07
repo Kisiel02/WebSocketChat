@@ -25,12 +25,13 @@ public class TextMessageController {
 
     @MessageMapping("/chat/messages")
     @SendTo("/topic/messages")
-    public String textMessage(String message) {
+    public void textMessage(String message) {
         Gson gson = new Gson();
         CustomMessage textMessage = gson.fromJson(message, CustomMessage.class);
+        logger.info("Received message: {}", textMessage.getText());
         this.service.handleTextMessage(textMessage);
-        logger.info(textMessage.getText());
-        return gson.toJson(textMessage);
+
+       // return gson.toJson(textMessage);
     }
 
     @MessageMapping("/chat/config")

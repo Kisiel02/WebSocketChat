@@ -48,7 +48,8 @@ public class TextMessageService {
     }
 
     public void handleTextMessage(CustomMessage message) {
-        this.chatGuiController.addLine(message.getText());
+        String text = securityManager.decryptWithSessionKey(message.getText());
+        this.chatGuiController.addLine(text);
     }
 
     public void handleConfigMessage(String message) throws NoSuchAlgorithmException, InvalidKeySpecException {

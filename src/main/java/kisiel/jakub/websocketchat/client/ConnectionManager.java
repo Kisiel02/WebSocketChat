@@ -57,6 +57,10 @@ public class ConnectionManager {
     }
 
     public void sendMessage(CustomMessage customMessage) {
+        String text = customMessage.getText();
+        String encrypted = securityManager.encryptWithSessionKey(text);
+        customMessage.setText(encrypted);
+        logger.info("Sending message {}",encrypted);
         this.stompSession.send(MESSAGES_LOCATION, gson.toJson(customMessage));
     }
 
@@ -101,7 +105,7 @@ public class ConnectionManager {
     public void exportSessionKey() {
         SecretKey sessionKey = this.securityManager.getSessionKey();
         ConfigDTO configDTO = new ConfigDTO();
-        byte[] encryptedSessionKey = this.securityManager.encrypt(sessionKey.getEncoded());
+        byte[] encryptedSessionKey = this.securityManager.encryptWithForeignKey(sessionKey.getEncoded());
         configDTO.setSessionKey(encryptedSessionKey);
         configDTO.setType(ConfigDTO.messageType.SESSION_KEY);
         logger.debug("\nExporting encrypted session key: {}", Base64.getEncoder().encodeToString(encryptedSessionKey));
