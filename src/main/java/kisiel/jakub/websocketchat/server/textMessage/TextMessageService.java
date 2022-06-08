@@ -48,7 +48,7 @@ public class TextMessageService {
     }
 
     public void handleTextMessage(CustomMessage message) {
-        String text = securityManager.decryptWithSessionKey(message.getText());
+        String text = securityManager.decryptWithSessionKey(message.getText(), message.getMode());
         this.chatGuiController.addLine(text);
     }
 

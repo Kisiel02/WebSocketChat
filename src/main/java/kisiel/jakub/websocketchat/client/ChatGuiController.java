@@ -5,6 +5,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import kisiel.jakub.websocketchat.SecurityManager;
 import kisiel.jakub.websocketchat.server.textMessage.CustomMessage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -48,6 +49,17 @@ public class ChatGuiController {
     private TextArea messages;
 
     @FXML
+    private Button cbc;
+
+    @FXML
+    private Button ecb;
+
+    @FXML
+    private Button file;
+
+    private SecurityManager.blockMode mode = SecurityManager.blockMode.CBC;
+
+    @FXML
     public void connectButtonAction(ActionEvent event) throws ExecutionException, InterruptedException {
         try {
             int portNumber = Integer.parseInt(port.getText());
@@ -64,7 +76,7 @@ public class ChatGuiController {
     public void sendButtonAction(ActionEvent event) {
         String text = textField.getText();
         CustomMessage customMessage = new CustomMessage(
-                text, CustomMessage.Type.TEXT
+                text, CustomMessage.Type.TEXT, mode
         );
         this.connectionManager.sendMessage(customMessage);
         textField.clear();
@@ -83,5 +95,13 @@ public class ChatGuiController {
 
     public void notifyAboutConnection() {
         this.addLine("Connected");
+    }
+
+    public void cbcAction(ActionEvent actionEvent) {
+        this.mode = SecurityManager.blockMode.CBC;
+    }
+
+    public void ecbAction(ActionEvent actionEvent) {
+        this.mode = SecurityManager.blockMode.ECB;
     }
 }

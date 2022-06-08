@@ -58,7 +58,7 @@ public class ConnectionManager {
 
     public void sendMessage(CustomMessage customMessage) {
         String text = customMessage.getText();
-        String encrypted = securityManager.encryptWithSessionKey(text);
+        String encrypted = securityManager.encryptWithSessionKey(text, customMessage.getMode());
         customMessage.setText(encrypted);
         logger.info("Sending message {}",encrypted);
         this.stompSession.send(MESSAGES_LOCATION, gson.toJson(customMessage));

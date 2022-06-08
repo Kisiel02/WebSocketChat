@@ -49,6 +49,9 @@
                <children>
                   <TextField fx:id="port" promptText="enter port" AnchorPane.leftAnchor="120.0" />
                   <Button id="connectButton" fx:id="connectButton" mnemonicParsing="false" onAction="#connectButtonAction" text="Connect" AnchorPane.leftAnchor="20.0" />
+                  <Button fx:id="cbc" layoutX="274.0" mnemonicParsing="false" onAction="#cbcAction" text="CBC" />
+                  <Button fx:id="ecb" layoutX="320.0" mnemonicParsing="false" onAction="#ecbAction" text="ECB" />
+                  <Button fx:id="file" layoutX="367.0" mnemonicParsing="false" text="Send file" />
                </children>
             </AnchorPane>
          </children>

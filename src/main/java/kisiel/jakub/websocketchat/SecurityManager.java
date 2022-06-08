@@ -36,6 +36,10 @@ public class SecurityManager {
 
     private static String SESSION_CIPHER = "AES";
 
+    private static String ECB = "AES/ECB/PKCS5Padding";
+
+    private static String CBC = "AES/CBC/PKCS5Padding";
+
     private static int SYMMETRIC_KEY_SIZE = 128;
 
     private static int ASYMMETRIC_KEY_SIZE = 2048;
@@ -51,6 +55,11 @@ public class SecurityManager {
     private SecretKey sessionKey;
 
     private IvParameterSpec iv;
+
+    public enum blockMode {
+        CBC,
+        ECB
+    }
 
     public void generateSessionKey(String symmetricAlgorithm, int keySizeSym) throws NoSuchAlgorithmException {
         KeyGenerator symmetricGenerator = KeyGenerator.getInstance(symmetricAlgorithm);
@@ -85,26 +94,44 @@ public class SecurityManager {
         KeyPair keyPair = asymmetricGenerator.generateKeyPair();
         this.privateKey = keyPair.getPrivate();
         this.publicKey = keyPair.getPublic();
-        generateSessionKey(SESSION_CIPHER, SYMMETRIC_KEY_SIZE);
+        generateSessionKey(symmetricAlgorithm, keySizeSym);
         logger.info("App public key:\n {}", getPublicKey());
     }
 
     @SneakyThrows
-    public String encryptWithSessionKey(String message) {
-        Cipher cipher = Cipher.getInstance(SESSION_CIPHER);
+    public String encryptWithSessionKey(String message, blockMode blockMode) {
+        Cipher cipher;
+
+        if (blockMode.equals(SecurityManager.blockMode.CBC)) {
+            cipher = Cipher.getInstance(CBC);
+        } else if (blockMode.equals(SecurityManager.blockMode.ECB)) {
+            cipher = Cipher.getInstance(ECB);
+        } else {
+            cipher = Cipher.getInstance(SESSION_CIPHER);
+        }
+
         cipher.init(Cipher.ENCRYPT_MODE, sessionKey);
         byte[] encoded = cipher.doFinal(message.getBytes());
-        String toReturn =  Base64.getEncoder().encodeToString(encoded);
+        String toReturn = Base64.getEncoder().encodeToString(encoded);
         //TODO add iv vector
-        String decrypted = decryptWithSessionKey(toReturn);
+        String decrypted = decryptWithSessionKey(toReturn, blockMode);
 
-        logger.info("Original message: {}\n string to be send: {}\n decoed string: {}", message, toReturn, decrypted);
+        logger.info("Original message: {}\n string to be send: {}\n decoded string: {}", message, toReturn, decrypted);
         return toReturn;
     }
 
     @SneakyThrows
-    public String decryptWithSessionKey(String message) {
-        Cipher cipher = Cipher.getInstance(SESSION_CIPHER);
+    public String decryptWithSessionKey(String message, blockMode blockMode) {
+        Cipher cipher;
+
+        if (blockMode.equals(SecurityManager.blockMode.CBC)) {
+            cipher = Cipher.getInstance(CBC);
+        } else if (blockMode.equals(SecurityManager.blockMode.ECB)) {
+            cipher = Cipher.getInstance(ECB);
+        } else {
+            cipher = Cipher.getInstance(SESSION_CIPHER);
+        }
+
         cipher.init(Cipher.DECRYPT_MODE, sessionKey);
         byte[] decrypted = cipher.doFinal(Base64.getDecoder().decode(message));
         return new String(decrypted);
@@ -144,7 +171,7 @@ public class SecurityManager {
         this.sessionKey = new SecretKeySpec(sessionKey, 0, sessionKey.length, SESSION_CIPHER);
         logger.info("Session key set:\n {}",
             Base64.getEncoder().encodeToString(
-            this.sessionKey.getEncoded()));
+                this.sessionKey.getEncoded()));
     }
 
     public void saveForeignKey(ConfigDTO configDTO) throws InvalidKeySpecException {
