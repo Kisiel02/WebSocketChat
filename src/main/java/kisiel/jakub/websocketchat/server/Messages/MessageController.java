@@ -1,6 +1,7 @@
-package kisiel.jakub.websocketchat.server.textMessage;
+package kisiel.jakub.websocketchat.server.Messages;
 
 import com.google.gson.Gson;
+import kisiel.jakub.websocketchat.messages.CustomMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,14 +13,14 @@ import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 
 @Controller
-public class TextMessageController {
+public class MessageController {
 
-    private final Logger logger = LoggerFactory.getLogger(TextMessageController.class);
+    private final Logger logger = LoggerFactory.getLogger(MessageController.class);
 
-    private final TextMessageService service;
+    private final MessageService service;
 
     @Autowired
-    public TextMessageController(TextMessageService service) {
+    public MessageController(MessageService service) {
         this.service = service;
     }
 
@@ -30,8 +31,6 @@ public class TextMessageController {
         CustomMessage textMessage = gson.fromJson(message, CustomMessage.class);
         logger.info("Received message: {}", textMessage.getText());
         this.service.handleTextMessage(textMessage);
-
-       // return gson.toJson(textMessage);
     }
 
     @MessageMapping("/chat/config")
@@ -44,5 +43,11 @@ public class TextMessageController {
         } catch (InvalidKeySpecException e) {
             e.printStackTrace();
         }
+    }
+
+    @MessageMapping("/chat/files")
+    @SendTo("/topic/messages")
+    public void receiveFile(String message) {
+        this.service.handleChunk(message);
     }
 }

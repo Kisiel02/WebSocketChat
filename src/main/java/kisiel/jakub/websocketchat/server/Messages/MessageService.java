@@ -1,11 +1,13 @@
-package kisiel.jakub.websocketchat.server.textMessage;
+package kisiel.jakub.websocketchat.server.Messages;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializer;
-import kisiel.jakub.websocketchat.ConfigDTO;
+import kisiel.jakub.websocketchat.messages.ConfigDTO;
+import kisiel.jakub.websocketchat.messages.CustomMessage;
+import kisiel.jakub.websocketchat.messages.FileMessage;
 import kisiel.jakub.websocketchat.SecurityManager;
 import kisiel.jakub.websocketchat.client.ChatGuiController;
 import kisiel.jakub.websocketchat.client.ConnectionManager;
@@ -15,14 +17,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import javax.crypto.spec.IvParameterSpec;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Base64;
 
 @Service
-public class TextMessageService {
+public class MessageService {
 
-    private final Logger logger = LoggerFactory.getLogger(TextMessageService.class);
+    private final Logger logger = LoggerFactory.getLogger(MessageService.class);
 
     private final ChatGuiController chatGuiController;
 
@@ -32,8 +40,10 @@ public class TextMessageService {
 
     private Gson gson;
 
+    int lastNumber = 0;
+
     @Autowired
-    public TextMessageService(ChatGuiController chatGuiController, SecurityManager securityManager, ConnectionManager connectionManager) {
+    public MessageService(ChatGuiController chatGuiController, SecurityManager securityManager, ConnectionManager connectionManager) {
         this.chatGuiController = chatGuiController;
         this.securityManager = securityManager;
         this.connectionManager = connectionManager;
@@ -48,7 +58,7 @@ public class TextMessageService {
     }
 
     public void handleTextMessage(CustomMessage message) {
-        String text = securityManager.decryptWithSessionKey(message.getText(), message.getMode());
+        String text = securityManager.decryptStringWithSessionKey(message.getText(), message.getMode());
         this.chatGuiController.addLine(text);
     }
 
@@ -69,8 +79,31 @@ public class TextMessageService {
             byte[] encryptedSessionKey = configDTO.getSessionKey();
             String sessionKeyString = Base64.getEncoder().encodeToString(configDTO.getSessionKey());
             logger.debug("\nReceived encrypted session key: {}", sessionKeyString);
-            byte[] decryptedSessionKey = this.securityManager.decrypt(encryptedSessionKey);
+            byte[] decryptedSessionKey = this.securityManager.decryptWithPrivateKey(encryptedSessionKey);
             this.securityManager.setSessionKeyFromBytes(decryptedSessionKey);
+            this.securityManager.setIv(new IvParameterSpec(configDTO.getIvVector()));
+            String ivString = Base64.getEncoder().encodeToString(securityManager.getIv().getIV());
+            logger.info("IV vector key: {}", ivString);
+        }
+    }
+
+    public void handleChunk(String message) {
+        FileMessage chunk = gson.fromJson(message, FileMessage.class);
+        File file = new File(chunk.getFileName());
+
+        // if first chunk, create file, otherwise append
+        boolean append = chunk.getCounter() != 0;
+
+        try (BufferedOutputStream output = new BufferedOutputStream(new FileOutputStream(file, append))) {
+            lastNumber = chunk.getCounter();
+            byte[] decrypted = securityManager.decryptFileWithSessionKey(chunk.getChunk(), chunk.getBlockMode());
+            output.write(decrypted);
+
+        } catch (FileNotFoundException e) {
+            logger.error("Could not create file", e);
+        } catch (IOException e) {
+            logger.error("Could not write to file", e);
         }
     }
 }
+

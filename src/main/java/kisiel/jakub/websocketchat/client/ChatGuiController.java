@@ -2,17 +2,21 @@ package kisiel.jakub.websocketchat.client;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 import kisiel.jakub.websocketchat.SecurityManager;
-import kisiel.jakub.websocketchat.server.textMessage.CustomMessage;
+import kisiel.jakub.websocketchat.messages.CustomMessage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
 import java.util.concurrent.ExecutionException;
 
 
@@ -57,7 +61,7 @@ public class ChatGuiController {
     @FXML
     private Button file;
 
-    private SecurityManager.blockMode mode = SecurityManager.blockMode.CBC;
+    private SecurityManager.BlockMode mode = SecurityManager.BlockMode.CBC;
 
     @FXML
     public void connectButtonAction(ActionEvent event) throws ExecutionException, InterruptedException {
@@ -98,10 +102,17 @@ public class ChatGuiController {
     }
 
     public void cbcAction(ActionEvent actionEvent) {
-        this.mode = SecurityManager.blockMode.CBC;
+        this.mode = SecurityManager.BlockMode.CBC;
     }
 
     public void ecbAction(ActionEvent actionEvent) {
-        this.mode = SecurityManager.blockMode.ECB;
+        this.mode = SecurityManager.BlockMode.ECB;
+    }
+
+    public void fileAction(ActionEvent actionEvent) {
+        FileChooser fileChooser = new FileChooser();
+        Stage stage = (Stage)((Node) actionEvent.getSource()).getScene().getWindow();
+        File file = fileChooser.showOpenDialog(stage);
+        this.connectionManager.sendFile(file, mode);
     }
 }
