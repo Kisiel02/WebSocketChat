@@ -9,7 +9,7 @@ import javafx.scene.control.TextField;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import kisiel.jakub.websocketchat.SecurityManager;
-import kisiel.jakub.websocketchat.Messages.CustomMessage;
+import kisiel.jakub.websocketchat.messages.CustomMessage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,7 +1,7 @@
 package kisiel.jakub.websocketchat.server.Messages;
 
 import com.google.gson.Gson;
-import kisiel.jakub.websocketchat.Messages.CustomMessage;
+import kisiel.jakub.websocketchat.messages.CustomMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

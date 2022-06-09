@@ -1,7 +1,7 @@
 package kisiel.jakub.websocketchat.client;
 
 import com.google.gson.Gson;
-import kisiel.jakub.websocketchat.Messages.CustomMessage;
+import kisiel.jakub.websocketchat.messages.CustomMessage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.messaging.simp.stomp.StompCommand;

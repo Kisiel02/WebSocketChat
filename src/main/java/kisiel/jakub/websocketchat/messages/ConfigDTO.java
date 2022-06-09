@@ -1,4 +1,4 @@
-package kisiel.jakub.websocketchat.Messages;
+package kisiel.jakub.websocketchat.messages;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
