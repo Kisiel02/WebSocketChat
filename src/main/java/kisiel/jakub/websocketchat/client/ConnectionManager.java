@@ -42,7 +42,7 @@ public class ConnectionManager {
 
     private static final String MESSAGES_LOCATION = "/app/chat/messages";
 
-    private static final int BUFFER_SIZE = 1024 * 4;
+    private static final int BUFFER_SIZE = 1024 * 8;
 
     private ChatGuiController chatGuiController;
 
@@ -79,7 +79,7 @@ public class ConnectionManager {
         this.stompSession.send(CONFIG_LOCATION, message);
     }
 
-    private void sendChunk(FileMessage fileMessage) {
+    public void sendChunk(FileMessage fileMessage) {
         String message = gson.toJson(fileMessage);
         this.stompSession.send(FILE_LOCATION, message);
     }
@@ -117,37 +117,9 @@ public class ConnectionManager {
         }
     }
 
-    public void sendFile(File file, SecurityManager.BlockMode mode) {
-        int count = 0;
-        int read;
-        byte[] buffer = new byte[BUFFER_SIZE];
-        try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(file))) {
-            while ((read = in.read(buffer)) > 0) {
-                FileMessage fileMessage = new FileMessage();
-                if (read != BUFFER_SIZE) {
-                    //last chunk
-                    fileMessage.setDone(true);
-                    byte[] lastChunk = new byte[read];
-                    System.arraycopy(buffer, 0, lastChunk, 0, read);
-                    fileMessage.setChunk(this.securityManager.encryptFileWithSessionKey(lastChunk, mode));
-                } else {
-                    fileMessage.setDone(false);
-                    fileMessage.setChunk(this.securityManager.encryptFileWithSessionKey(buffer, mode));
-                }
-
-                fileMessage.setCounter(count);
-                fileMessage.setBlockMode(mode);
-                fileMessage.setFileName(file.getName());
-
-                count++;
-                sendChunk(fileMessage);
-            }
-
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public FileUpdateTask sendFile(File file, SecurityManager.BlockMode mode) {
+        FileUpdateTask fileUpdateTask = new FileUpdateTask(BUFFER_SIZE, file,securityManager, mode, this);
+        return fileUpdateTask;
     }
 
     public void exportSessionKey() {

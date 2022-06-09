@@ -4,6 +4,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.stage.FileChooser;
@@ -37,9 +38,6 @@ public class ChatGuiController {
     @FXML
     private Button connectButton;
 
-//    @FXML
-//    private ScrollPane scrollField;
-
     @FXML
     private Button sendButton;
 
@@ -60,6 +58,9 @@ public class ChatGuiController {
 
     @FXML
     private Button file;
+
+    @FXML
+    private ProgressBar fileProgress;
 
     private SecurityManager.BlockMode mode = SecurityManager.BlockMode.CBC;
 
@@ -83,6 +84,7 @@ public class ChatGuiController {
                 text, CustomMessage.Type.TEXT, mode
         );
         this.connectionManager.sendMessage(customMessage);
+        addLine(text);
         textField.clear();
     }
 
@@ -109,10 +111,20 @@ public class ChatGuiController {
         this.mode = SecurityManager.BlockMode.ECB;
     }
 
-    public void fileAction(ActionEvent actionEvent) {
+    public void fileAction(ActionEvent actionEvent) throws Exception {
         FileChooser fileChooser = new FileChooser();
         Stage stage = (Stage)((Node) actionEvent.getSource()).getScene().getWindow();
         File file = fileChooser.showOpenDialog(stage);
-        this.connectionManager.sendFile(file, mode);
+        FileUpdateTask fileUpdateTask = this.connectionManager.sendFile(file, mode);
+        fileProgress.setStyle("-fx-accent: #16507E");
+        fileProgress.progressProperty().bind(fileUpdateTask.progressProperty());
+        final Thread thread = new Thread(fileUpdateTask, "task-thread");
+        thread.setDaemon(true);
+        fileProgress.progressProperty().addListener(observable -> {
+            if (fileProgress.getProgress() >= 0.99d) {
+                fileProgress.setStyle("-fx-accent: forestgreen;");
+            }
+        });
+        thread.start();
     }
 }

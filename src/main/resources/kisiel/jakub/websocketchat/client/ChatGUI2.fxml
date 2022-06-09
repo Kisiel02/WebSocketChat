@@ -40,6 +40,11 @@
    <top>
       <HBox alignment="CENTER_LEFT" prefHeight="43.0" prefWidth="640.0" style="-fx-background-color: #16507E;" BorderPane.alignment="CENTER">
          <children>
+            <TextField fx:id="port" promptText="enter port">
+               <HBox.margin>
+                  <Insets left="10.0" />
+               </HBox.margin>
+            </TextField>
             <Button fx:id="connectButton" mnemonicParsing="false" onAction="#connectButtonAction" text="Connect">
                <HBox.margin>
                   <Insets left="10.0" />
@@ -61,11 +66,10 @@
                   <Insets left="10.0" />
                </HBox.margin>
             </Button>
-            <TextField fx:id="port" promptText="enter port">
+            <ProgressBar fx:id="fileProgress" prefWidth="200.0" progress="0.0">
                <HBox.margin>
                   <Insets left="10.0" />
-               </HBox.margin>
-            </TextField>
+               </HBox.margin></ProgressBar>
 
                </children>
       </HBox>
@@ -87,6 +91,6 @@
       </HBox>
    </bottom>
    <center>
-      <TextArea fx:id="messages" BorderPane.alignment="CENTER" />
+      <TextArea fx:id="messages" editable="false" BorderPane.alignment="CENTER" />
    </center>
 </BorderPane>
