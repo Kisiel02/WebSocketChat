@@ -42,7 +42,7 @@ public class ConnectionManager {
 
     private static final String MESSAGES_LOCATION = "/app/chat/messages";
 
-    private static final int BUFFER_SIZE = 4096;
+    private static final int BUFFER_SIZE = 1024 * 4;
 
     private ChatGuiController chatGuiController;
 
@@ -121,8 +121,7 @@ public class ConnectionManager {
         int count = 0;
         int read;
         byte[] buffer = new byte[BUFFER_SIZE];
-        try {
-            BufferedInputStream in = new BufferedInputStream(new FileInputStream(file));
+        try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(file))) {
             while ((read = in.read(buffer)) > 0) {
                 FileMessage fileMessage = new FileMessage();
                 if (read != BUFFER_SIZE) {
@@ -158,7 +157,8 @@ public class ConnectionManager {
         configDTO.setSessionKey(encryptedSessionKey);
         configDTO.setType(ConfigDTO.messageType.SESSION_KEY);
         configDTO.setIvVector(securityManager.getIv().getIV());
-        logger.debug("\nExporting encrypted session key: {}", Base64.getEncoder().encodeToString(encryptedSessionKey));
+        String sessionKeyString = Base64.getEncoder().encodeToString(encryptedSessionKey);
+        logger.debug("\nExporting encrypted session key: {}", sessionKeyString);
         sendConfig(configDTO);
     }
 

@@ -23,14 +23,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.ArrayList;
 import java.util.Base64;
-import java.util.List;
 
 @Service
 public class MessageService {
@@ -45,11 +40,7 @@ public class MessageService {
 
     private Gson gson;
 
-    private List<File> temporaryFiles;
-
     int lastNumber = 0;
-
-    //private BufferedOutputStream output;
 
     @Autowired
     public MessageService(ChatGuiController chatGuiController, SecurityManager securityManager, ConnectionManager connectionManager) {
@@ -91,41 +82,23 @@ public class MessageService {
             byte[] decryptedSessionKey = this.securityManager.decryptWithPrivateKey(encryptedSessionKey);
             this.securityManager.setSessionKeyFromBytes(decryptedSessionKey);
             this.securityManager.setIv(new IvParameterSpec(configDTO.getIvVector()));
-            logger.info("IV vector key: {}", Base64.getEncoder().encodeToString(securityManager.getIv().getIV()));
+            String ivString = Base64.getEncoder().encodeToString(securityManager.getIv().getIV());
+            logger.info("IV vector key: {}", ivString);
         }
     }
 
-    public void handleChunk(String message) throws IOException {
+    public void handleChunk(String message) {
         FileMessage chunk = gson.fromJson(message, FileMessage.class);
-        temporaryFiles = new ArrayList<>();
+        File file = new File(chunk.getFileName());
 
-        try {
-            String tmpPath = "/temp/" + chunk.getFileName() + chunk.getCounter();
-//            Path path = Paths.get(tmpPath);
-            File file = new File(tmpPath);
+        // if first chunk, create file, otherwise append
+        boolean append = chunk.getCounter() != 0;
 
-            //zamienić na tablice
-
-            BufferedOutputStream output;
-            if (chunk.getCounter() == 0) {
-                //First message, open stream
-                output = new BufferedOutputStream(new FileOutputStream(file, false));
-                lastNumber = chunk.getCounter();
-                temporaryFiles.
-            } else {
-                output = new BufferedOutputStream(new FileOutputStream(chunk.getFileName(), true));
-                if (chunk.getCounter() != lastNumber + 1) {
-                    logger.error("Zła kolejność nr: {}", chunk.getCounter());
-                }
-                lastNumber = chunk.getCounter();
-            }
+        try (BufferedOutputStream output = new BufferedOutputStream(new FileOutputStream(file, append))) {
+            lastNumber = chunk.getCounter();
             byte[] decrypted = securityManager.decryptFileWithSessionKey(chunk.getChunk(), chunk.getBlockMode());
             output.write(decrypted);
-            output.close();
-//            if (chunk.isDone()) {
-//                output.flush();
-//                output.close();
-//            }
+
         } catch (FileNotFoundException e) {
             logger.error("Could not create file", e);
         } catch (IOException e) {

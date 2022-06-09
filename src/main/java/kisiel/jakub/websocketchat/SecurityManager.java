@@ -72,8 +72,10 @@ public class SecurityManager {
         byte[] ivVector = new byte[IV_SIZE];
         new SecureRandom().nextBytes(ivVector);
         this.iv = new IvParameterSpec(ivVector);
-        logger.info("Session key: {}", Base64.getEncoder().encodeToString(sessionKey.getEncoded()));
-        logger.info("IV vector: {}", Base64.getEncoder().encodeToString(iv.getIV()));
+        String sessionKeyString = Base64.getEncoder().encodeToString(sessionKey.getEncoded());
+        logger.info("Session key: {}", sessionKeyString);
+        String ivVectorString = Base64.getEncoder().encodeToString(iv.getIV());
+        logger.info("IV vector: {}", ivVectorString);
 
     }
 
@@ -125,23 +127,13 @@ public class SecurityManager {
     @SneakyThrows
     public byte[] encryptFileWithSessionKey(byte[] chunk, BlockMode blockMode) {
         Cipher cipher = getCipher(blockMode, Cipher.ENCRYPT_MODE);
-
-        byte[] encoded = cipher.doFinal(chunk);
-       /* String toReturn = Base64.getEncoder().encodeToString(encoded);
-        String decrypted = decryptWithSessionKey(toReturn, BlockMode);*/
-
-        //logger.info("Original chunk: {}\n string to be send: {}\n decoded string: {}", message, toReturn, decrypted);
-        return encoded;
+        return cipher.doFinal(chunk);
     }
 
     @SneakyThrows
     public byte[] decryptFileWithSessionKey(byte[] chunk, BlockMode blockMode) {
         Cipher cipher = getCipher(blockMode, Cipher.DECRYPT_MODE);
-
         byte[] decoded = cipher.doFinal(chunk);
-       /* String toReturn = Base64.getEncoder().encodeToString(encoded);
-        String decrypted = decryptWithSessionKey(toReturn, BlockMode);*/
-
         logger.debug("Decoded chunk: {}", new String(decoded));
         return decoded;
     }
