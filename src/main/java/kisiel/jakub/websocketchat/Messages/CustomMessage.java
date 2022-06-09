@@ -1,4 +1,4 @@
-package kisiel.jakub.websocketchat.server.textMessage;
+package kisiel.jakub.websocketchat.Messages;
 
 import kisiel.jakub.websocketchat.SecurityManager;
 import lombok.AllArgsConstructor;
@@ -16,7 +16,7 @@ public class CustomMessage {
 
     private Type type;
 
-    private SecurityManager.blockMode mode;
+    private SecurityManager.BlockMode mode;
 
     public enum Type {
         TEXT,

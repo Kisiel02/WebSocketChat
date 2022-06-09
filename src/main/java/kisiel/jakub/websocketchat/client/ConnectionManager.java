@@ -5,9 +5,10 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializer;
-import kisiel.jakub.websocketchat.ConfigDTO;
+import kisiel.jakub.websocketchat.Messages.ConfigDTO;
+import kisiel.jakub.websocketchat.Messages.FileMessage;
 import kisiel.jakub.websocketchat.SecurityManager;
-import kisiel.jakub.websocketchat.server.textMessage.CustomMessage;
+import kisiel.jakub.websocketchat.Messages.CustomMessage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,11 @@ import org.springframework.web.socket.messaging.WebSocketStompClient;
 
 import javax.annotation.PostConstruct;
 import javax.crypto.SecretKey;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.security.*;
 import java.util.Base64;
 
@@ -32,7 +38,11 @@ public class ConnectionManager {
 
     private static final String CONFIG_LOCATION = "/app/chat/config";
 
+    private static final String FILE_LOCATION = "/app/chat/files";
+
     private static final String MESSAGES_LOCATION = "/app/chat/messages";
+
+    private static final int BUFFER_SIZE = 4096;
 
     private ChatGuiController chatGuiController;
 
@@ -58,15 +68,20 @@ public class ConnectionManager {
 
     public void sendMessage(CustomMessage customMessage) {
         String text = customMessage.getText();
-        String encrypted = securityManager.encryptWithSessionKey(text, customMessage.getMode());
+        String encrypted = securityManager.encryptStringWithSessionKey(text, customMessage.getMode());
         customMessage.setText(encrypted);
-        logger.info("Sending message {}",encrypted);
+        logger.info("Sending message {}", encrypted);
         this.stompSession.send(MESSAGES_LOCATION, gson.toJson(customMessage));
     }
 
     public void sendConfig(ConfigDTO configDTO) {
         String message = gson.toJson(configDTO);
         this.stompSession.send(CONFIG_LOCATION, message);
+    }
+
+    private void sendChunk(FileMessage fileMessage) {
+        String message = gson.toJson(fileMessage);
+        this.stompSession.send(FILE_LOCATION, message);
     }
 
     public void initConnection(int anotherPort, int ownPort) {
@@ -102,12 +117,47 @@ public class ConnectionManager {
         }
     }
 
+    public void sendFile(File file, SecurityManager.BlockMode mode) {
+        int count = 0;
+        int read;
+        byte[] buffer = new byte[BUFFER_SIZE];
+        try {
+            BufferedInputStream in = new BufferedInputStream(new FileInputStream(file));
+            while ((read = in.read(buffer)) > 0) {
+                FileMessage fileMessage = new FileMessage();
+                if (read != BUFFER_SIZE) {
+                    //last chunk
+                    fileMessage.setDone(true);
+                    byte[] lastChunk = new byte[read];
+                    System.arraycopy(buffer, 0, lastChunk, 0, read);
+                    fileMessage.setChunk(this.securityManager.encryptFileWithSessionKey(lastChunk, mode));
+                } else {
+                    fileMessage.setDone(false);
+                    fileMessage.setChunk(this.securityManager.encryptFileWithSessionKey(buffer, mode));
+                }
+
+                fileMessage.setCounter(count);
+                fileMessage.setBlockMode(mode);
+                fileMessage.setFileName(file.getName());
+
+                count++;
+                sendChunk(fileMessage);
+            }
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void exportSessionKey() {
         SecretKey sessionKey = this.securityManager.getSessionKey();
         ConfigDTO configDTO = new ConfigDTO();
         byte[] encryptedSessionKey = this.securityManager.encryptWithForeignKey(sessionKey.getEncoded());
         configDTO.setSessionKey(encryptedSessionKey);
         configDTO.setType(ConfigDTO.messageType.SESSION_KEY);
+        configDTO.setIvVector(securityManager.getIv().getIV());
         logger.debug("\nExporting encrypted session key: {}", Base64.getEncoder().encodeToString(encryptedSessionKey));
         sendConfig(configDTO);
     }

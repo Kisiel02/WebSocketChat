@@ -1,11 +1,13 @@
-package kisiel.jakub.websocketchat.server.textMessage;
+package kisiel.jakub.websocketchat.server.Messages;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializer;
-import kisiel.jakub.websocketchat.ConfigDTO;
+import kisiel.jakub.websocketchat.Messages.ConfigDTO;
+import kisiel.jakub.websocketchat.Messages.CustomMessage;
+import kisiel.jakub.websocketchat.Messages.FileMessage;
 import kisiel.jakub.websocketchat.SecurityManager;
 import kisiel.jakub.websocketchat.client.ChatGuiController;
 import kisiel.jakub.websocketchat.client.ConnectionManager;
@@ -15,14 +17,25 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import javax.crypto.spec.IvParameterSpec;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 
 @Service
-public class TextMessageService {
+public class MessageService {
 
-    private final Logger logger = LoggerFactory.getLogger(TextMessageService.class);
+    private final Logger logger = LoggerFactory.getLogger(MessageService.class);
 
     private final ChatGuiController chatGuiController;
 
@@ -32,8 +45,14 @@ public class TextMessageService {
 
     private Gson gson;
 
+    private List<File> temporaryFiles;
+
+    int lastNumber = 0;
+
+    //private BufferedOutputStream output;
+
     @Autowired
-    public TextMessageService(ChatGuiController chatGuiController, SecurityManager securityManager, ConnectionManager connectionManager) {
+    public MessageService(ChatGuiController chatGuiController, SecurityManager securityManager, ConnectionManager connectionManager) {
         this.chatGuiController = chatGuiController;
         this.securityManager = securityManager;
         this.connectionManager = connectionManager;
@@ -48,7 +67,7 @@ public class TextMessageService {
     }
 
     public void handleTextMessage(CustomMessage message) {
-        String text = securityManager.decryptWithSessionKey(message.getText(), message.getMode());
+        String text = securityManager.decryptStringWithSessionKey(message.getText(), message.getMode());
         this.chatGuiController.addLine(text);
     }
 
@@ -69,8 +88,49 @@ public class TextMessageService {
             byte[] encryptedSessionKey = configDTO.getSessionKey();
             String sessionKeyString = Base64.getEncoder().encodeToString(configDTO.getSessionKey());
             logger.debug("\nReceived encrypted session key: {}", sessionKeyString);
-            byte[] decryptedSessionKey = this.securityManager.decrypt(encryptedSessionKey);
+            byte[] decryptedSessionKey = this.securityManager.decryptWithPrivateKey(encryptedSessionKey);
             this.securityManager.setSessionKeyFromBytes(decryptedSessionKey);
+            this.securityManager.setIv(new IvParameterSpec(configDTO.getIvVector()));
+            logger.info("IV vector key: {}", Base64.getEncoder().encodeToString(securityManager.getIv().getIV()));
+        }
+    }
+
+    public void handleChunk(String message) throws IOException {
+        FileMessage chunk = gson.fromJson(message, FileMessage.class);
+        temporaryFiles = new ArrayList<>();
+
+        try {
+            String tmpPath = "/temp/" + chunk.getFileName() + chunk.getCounter();
+//            Path path = Paths.get(tmpPath);
+            File file = new File(tmpPath);
+
+            //zamienić na tablice
+
+            BufferedOutputStream output;
+            if (chunk.getCounter() == 0) {
+                //First message, open stream
+                output = new BufferedOutputStream(new FileOutputStream(file, false));
+                lastNumber = chunk.getCounter();
+                temporaryFiles.
+            } else {
+                output = new BufferedOutputStream(new FileOutputStream(chunk.getFileName(), true));
+                if (chunk.getCounter() != lastNumber + 1) {
+                    logger.error("Zła kolejność nr: {}", chunk.getCounter());
+                }
+                lastNumber = chunk.getCounter();
+            }
+            byte[] decrypted = securityManager.decryptFileWithSessionKey(chunk.getChunk(), chunk.getBlockMode());
+            output.write(decrypted);
+            output.close();
+//            if (chunk.isDone()) {
+//                output.flush();
+//                output.close();
+//            }
+        } catch (FileNotFoundException e) {
+            logger.error("Could not create file", e);
+        } catch (IOException e) {
+            logger.error("Could not write to file", e);
         }
     }
 }
+

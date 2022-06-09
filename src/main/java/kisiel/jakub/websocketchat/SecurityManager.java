@@ -1,5 +1,6 @@
 package kisiel.jakub.websocketchat;
 
+import kisiel.jakub.websocketchat.Messages.ConfigDTO;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -9,10 +10,13 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -56,7 +60,7 @@ public class SecurityManager {
 
     private IvParameterSpec iv;
 
-    public enum blockMode {
+    public enum BlockMode {
         CBC,
         ECB
     }
@@ -69,6 +73,7 @@ public class SecurityManager {
         new SecureRandom().nextBytes(ivVector);
         this.iv = new IvParameterSpec(ivVector);
         logger.info("Session key: {}", Base64.getEncoder().encodeToString(sessionKey.getEncoded()));
+        logger.info("IV vector: {}", Base64.getEncoder().encodeToString(iv.getIV()));
 
     }
 
@@ -77,6 +82,17 @@ public class SecurityManager {
         KeyGenerator symmetricGenerator = KeyGenerator.getInstance(SESSION_CIPHER);
         symmetricGenerator.init(SYMMETRIC_KEY_SIZE);
         this.sessionKey = symmetricGenerator.generateKey();
+    }
+
+    public void saveForeignKey(ConfigDTO configDTO) throws InvalidKeySpecException {
+        try {
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(configDTO.getPublicKey());
+            this.setForeignKey(keyFactory.generatePublic(publicKeySpec));
+            logger.debug("Foreign public key:\n {}", foreignKey);
+        } catch (NoSuchAlgorithmException e) {
+            logger.error("Wrong algorithm name", e);
+        }
     }
 
     public void initializeSecurity(String asymmetricAlgorithm, int keySizeAsym) throws NoSuchAlgorithmException {
@@ -99,40 +115,55 @@ public class SecurityManager {
     }
 
     @SneakyThrows
-    public String encryptWithSessionKey(String message, blockMode blockMode) {
-        Cipher cipher;
+    public void setSessionKeyFromBytes(byte[] sessionKey) {
+        this.sessionKey = new SecretKeySpec(sessionKey, 0, sessionKey.length, SESSION_CIPHER);
+        logger.info("Session key set:\n {}",
+            Base64.getEncoder().encodeToString(
+                this.sessionKey.getEncoded()));
+    }
 
-        if (blockMode.equals(SecurityManager.blockMode.CBC)) {
-            cipher = Cipher.getInstance(CBC);
-        } else if (blockMode.equals(SecurityManager.blockMode.ECB)) {
-            cipher = Cipher.getInstance(ECB);
-        } else {
-            cipher = Cipher.getInstance(SESSION_CIPHER);
-        }
+    @SneakyThrows
+    public byte[] encryptFileWithSessionKey(byte[] chunk, BlockMode blockMode) {
+        Cipher cipher = getCipher(blockMode, Cipher.ENCRYPT_MODE);
 
-        cipher.init(Cipher.ENCRYPT_MODE, sessionKey);
+        byte[] encoded = cipher.doFinal(chunk);
+       /* String toReturn = Base64.getEncoder().encodeToString(encoded);
+        String decrypted = decryptWithSessionKey(toReturn, BlockMode);*/
+
+        //logger.info("Original chunk: {}\n string to be send: {}\n decoded string: {}", message, toReturn, decrypted);
+        return encoded;
+    }
+
+    @SneakyThrows
+    public byte[] decryptFileWithSessionKey(byte[] chunk, BlockMode blockMode) {
+        Cipher cipher = getCipher(blockMode, Cipher.DECRYPT_MODE);
+
+        byte[] decoded = cipher.doFinal(chunk);
+       /* String toReturn = Base64.getEncoder().encodeToString(encoded);
+        String decrypted = decryptWithSessionKey(toReturn, BlockMode);*/
+
+        logger.debug("Decoded chunk: {}", new String(decoded));
+        return decoded;
+    }
+
+    @SneakyThrows
+    public String encryptStringWithSessionKey(String message, BlockMode blockMode) {
+        Cipher cipher = getCipher(blockMode, Cipher.ENCRYPT_MODE);
+
         byte[] encoded = cipher.doFinal(message.getBytes());
         String toReturn = Base64.getEncoder().encodeToString(encoded);
         //TODO add iv vector
-        String decrypted = decryptWithSessionKey(toReturn, blockMode);
+        String decrypted = decryptStringWithSessionKey(toReturn, blockMode);
 
         logger.info("Original message: {}\n string to be send: {}\n decoded string: {}", message, toReturn, decrypted);
         return toReturn;
     }
 
+
     @SneakyThrows
-    public String decryptWithSessionKey(String message, blockMode blockMode) {
-        Cipher cipher;
+    public String decryptStringWithSessionKey(String message, BlockMode blockMode) {
+        Cipher cipher = getCipher(blockMode, Cipher.DECRYPT_MODE);
 
-        if (blockMode.equals(SecurityManager.blockMode.CBC)) {
-            cipher = Cipher.getInstance(CBC);
-        } else if (blockMode.equals(SecurityManager.blockMode.ECB)) {
-            cipher = Cipher.getInstance(ECB);
-        } else {
-            cipher = Cipher.getInstance(SESSION_CIPHER);
-        }
-
-        cipher.init(Cipher.DECRYPT_MODE, sessionKey);
         byte[] decrypted = cipher.doFinal(Base64.getDecoder().decode(message));
         return new String(decrypted);
     }
@@ -152,36 +183,32 @@ public class SecurityManager {
     }
 
     @SneakyThrows
-    public byte[] decrypt(byte[] message) {
+    public byte[] decryptWithPrivateKey(byte[] message) {
         Cipher decrypt = Cipher.getInstance(CIPHER);
         decrypt.init(Cipher.DECRYPT_MODE, this.privateKey);
         return decrypt.doFinal(message);
     }
 
     @SneakyThrows
-    public String decrypt(String message) {
+    public String decryptWithPrivateKey(String message) {
         Cipher decrypt = Cipher.getInstance(CIPHER);
         decrypt.init(Cipher.DECRYPT_MODE, this.privateKey);
         byte[] decrypted = decrypt.doFinal(message.getBytes(StandardCharsets.UTF_8));
         return new String(decrypted, StandardCharsets.UTF_8);
     }
 
-    @SneakyThrows
-    public void setSessionKeyFromBytes(byte[] sessionKey) {
-        this.sessionKey = new SecretKeySpec(sessionKey, 0, sessionKey.length, SESSION_CIPHER);
-        logger.info("Session key set:\n {}",
-            Base64.getEncoder().encodeToString(
-                this.sessionKey.getEncoded()));
-    }
-
-    public void saveForeignKey(ConfigDTO configDTO) throws InvalidKeySpecException {
-        try {
-            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-            EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(configDTO.getPublicKey());
-            this.setForeignKey(keyFactory.generatePublic(publicKeySpec));
-            logger.debug("Foreign public key:\n {}", foreignKey);
-        } catch (NoSuchAlgorithmException e) {
-            logger.error("Wrong algorithm name", e);
+    private Cipher getCipher(BlockMode blockMode, int encryptMode) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException {
+        Cipher cipher;
+        if (blockMode.equals(BlockMode.CBC)) {
+            cipher = Cipher.getInstance(CBC);
+            cipher.init(encryptMode, sessionKey, iv);
+        } else if (blockMode.equals(BlockMode.ECB)) {
+            cipher = Cipher.getInstance(ECB);
+            cipher.init(encryptMode, sessionKey);
+        } else {
+            cipher = Cipher.getInstance(SESSION_CIPHER);
+            cipher.init(encryptMode, sessionKey);
         }
+        return cipher;
     }
 }

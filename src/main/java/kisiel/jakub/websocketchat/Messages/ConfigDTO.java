@@ -1,9 +1,11 @@
-package kisiel.jakub.websocketchat;
+package kisiel.jakub.websocketchat.Messages;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import javax.crypto.spec.IvParameterSpec;
 
 @Getter
 @Setter
@@ -18,6 +20,8 @@ public class ConfigDTO {
     private int port;
 
     private messageType type;
+
+    private byte[] ivVector;
 
     public enum messageType {
         PUBLIC_KEY,
