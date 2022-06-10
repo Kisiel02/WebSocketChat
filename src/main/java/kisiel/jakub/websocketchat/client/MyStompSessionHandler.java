@@ -21,7 +21,7 @@ public class MyStompSessionHandler extends StompSessionHandlerAdapter {
 
     @Override
     public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
-        logger.info("New session established : " + session.getSessionId());
+        logger.info("New session established: {}", session.getSessionId());
         session.subscribe("/topic/messages", this);
         logger.info("Subscribed to /topic/messages");
         chatGuiController.notifyAboutConnection();
@@ -35,7 +35,7 @@ public class MyStompSessionHandler extends StompSessionHandlerAdapter {
     @Override
     public void handleFrame(StompHeaders headers, Object payload) {
         Gson gson = new Gson();
-        CustomMessage message = (CustomMessage)gson.fromJson(String.valueOf(payload), CustomMessage.class);
+        CustomMessage message = gson.fromJson(String.valueOf(payload), CustomMessage.class);
         this.logger.info(message.getText());
         this.chatGuiController.addOwnLine(message.getText());
     }

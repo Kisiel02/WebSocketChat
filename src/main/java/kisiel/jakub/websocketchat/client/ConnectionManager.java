@@ -114,9 +114,8 @@ public class ConnectionManager {
         }
     }
 
-    public FileUpdateTask sendFile(File file, SecurityManager.BlockMode mode) {
-        FileUpdateTask fileUpdateTask = new FileUpdateTask(BUFFER_SIZE, file,securityManager, mode, this);
-        return fileUpdateTask;
+    public FileUpdateTask<Void> sendFile(File file, SecurityManager.BlockMode mode) {
+        return new FileUpdateTask<>(BUFFER_SIZE, file,securityManager, mode, this);
     }
 
     public void exportSessionKey() {

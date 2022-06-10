@@ -8,11 +8,9 @@ import lombok.AllArgsConstructor;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 
 @AllArgsConstructor
-public class FileUpdateTask<Void> extends Task<Void> {
+public class FileUpdateTask<T> extends Task<T> {
 
     private final int bufferSize;
 
@@ -25,11 +23,10 @@ public class FileUpdateTask<Void> extends Task<Void> {
     private ConnectionManager connectionManager;
 
     @Override
-    protected Void call() throws Exception {
+    protected T call() {
         int count = 0;
         int read;
         long alreadyRead = 0;
-        double progress = 0.0;
         byte[] buffer = new byte[bufferSize];
         try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(file))) {
             while ((read = in.read(buffer)) > 0) {
@@ -56,9 +53,7 @@ public class FileUpdateTask<Void> extends Task<Void> {
                 updateProgress(alreadyRead, file.length());
             }
 
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
