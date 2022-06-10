@@ -24,6 +24,7 @@ public class MyStompSessionHandler extends StompSessionHandlerAdapter {
         logger.info("New session established : " + session.getSessionId());
         session.subscribe("/topic/messages", this);
         logger.info("Subscribed to /topic/messages");
+        chatGuiController.notifyAboutConnection();
     }
 
     @Override
@@ -36,6 +37,6 @@ public class MyStompSessionHandler extends StompSessionHandlerAdapter {
         Gson gson = new Gson();
         CustomMessage message = (CustomMessage)gson.fromJson(String.valueOf(payload), CustomMessage.class);
         this.logger.info(message.getText());
-        this.chatGuiController.addLine(message.getText());
+        this.chatGuiController.addOwnLine(message.getText());
     }
 }

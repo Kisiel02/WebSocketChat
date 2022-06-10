@@ -40,8 +40,6 @@ public class MessageService {
 
     private Gson gson;
 
-    int lastNumber = 0;
-
     @Autowired
     public MessageService(ChatGuiController chatGuiController, SecurityManager securityManager, ConnectionManager connectionManager) {
         this.chatGuiController = chatGuiController;
@@ -59,7 +57,7 @@ public class MessageService {
 
     public void handleTextMessage(CustomMessage message) {
         String text = securityManager.decryptStringWithSessionKey(message.getText(), message.getMode());
-        this.chatGuiController.addLine(text);
+        this.chatGuiController.addForeignLine(text);
     }
 
     public void handleConfigMessage(String message) throws NoSuchAlgorithmException, InvalidKeySpecException {
@@ -95,7 +93,6 @@ public class MessageService {
         boolean append = chunk.getCounter() != 0;
 
         try (BufferedOutputStream output = new BufferedOutputStream(new FileOutputStream(file, append))) {
-            lastNumber = chunk.getCounter();
             byte[] decrypted = securityManager.decryptFileWithSessionKey(chunk.getChunk(), chunk.getBlockMode());
             output.write(decrypted);
 
@@ -104,6 +101,8 @@ public class MessageService {
         } catch (IOException e) {
             logger.error("Could not write to file", e);
         }
+
+//        if(chunk.isDone())
     }
 }
 

@@ -1,12 +1,17 @@
 package kisiel.jakub.websocketchat.client;
 
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
-import javafx.scene.control.TextArea;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import kisiel.jakub.websocketchat.SecurityManager;
@@ -36,31 +41,19 @@ public class ChatGuiController {
     private ConnectionManager connectionManager;
 
     @FXML
-    private Button connectButton;
-
-    @FXML
-    private Button sendButton;
-
-    @FXML
     private TextField textField;
 
     @FXML
     private TextField port;
 
     @FXML
-    private TextArea messages;
-
-    @FXML
-    private Button cbc;
-
-    @FXML
-    private Button ecb;
-
-    @FXML
-    private Button file;
+    private VBox messages;
 
     @FXML
     private ProgressBar fileProgress;
+
+    @FXML
+    private ScrollPane scrollPane;
 
     private SecurityManager.BlockMode mode = SecurityManager.BlockMode.CBC;
 
@@ -68,12 +61,14 @@ public class ChatGuiController {
     public void connectButtonAction(ActionEvent event) throws ExecutionException, InterruptedException {
         try {
             int portNumber = Integer.parseInt(port.getText());
+            this.scrollPane.setPrefWidth(messages.getWidth());
             connectionManager.initConnection(portNumber, portOwn);
         } catch (NumberFormatException e) {
             logger.info(portAnother);
             connectionManager.initConnection(portAnother, portOwn);;
         } catch (Exception e) {
-            this.messages.setText("Could not connect");
+            //this.messages.add("Could not connect");
+            addOwnLine("Could not connect");
         }
     }
 
@@ -84,30 +79,33 @@ public class ChatGuiController {
                 text, CustomMessage.Type.TEXT, mode
         );
         this.connectionManager.sendMessage(customMessage);
-        addLine(text);
+        addOwnLine(text);
         textField.clear();
     }
 
-    @FXML
-    public void textFieldAction(ActionEvent event) {
-        //TODO
-        // enter to send
+    public void addOwnLine(String line) {
+        Platform.runLater(() -> messages.getChildren().add(createText(line, MessageDisplay.LEFT)));
     }
 
-    public void addLine(String line) {
-        messages.setText(messages.getText() + "\n" + line);
+    public void addForeignLine(String line) {
+        Platform.runLater(() -> messages.getChildren().add(createText(line, MessageDisplay.RIGHT)));
+    }
 
+    public void addInfoLine(String line) {
+        Platform.runLater(() -> messages.getChildren().add(createText(line, MessageDisplay.CENTER)));
     }
 
     public void notifyAboutConnection() {
-        this.addLine("Connected");
+        this.addInfoLine("Connected");
     }
 
-    public void cbcAction(ActionEvent actionEvent) {
+    @FXML
+    private void cbcAction(ActionEvent actionEvent) {
         this.mode = SecurityManager.BlockMode.CBC;
     }
 
-    public void ecbAction(ActionEvent actionEvent) {
+    @FXML
+    private void ecbAction(ActionEvent actionEvent) {
         this.mode = SecurityManager.BlockMode.ECB;
     }
 
@@ -126,5 +124,35 @@ public class ChatGuiController {
             }
         });
         thread.start();
+    }
+
+    private static HBox createText(String text, MessageDisplay alignment) {
+        Label label = new Label(text);
+        label.setWrapText(true);
+        label.setMaxWidth(200);
+        label.setPadding(new Insets(5));
+        label.setStyle("-fx-background-radius: 6");
+        HBox pane = new HBox(label);
+        switch (alignment){
+            case LEFT:
+                pane.setAlignment(Pos.CENTER_LEFT);
+                label.setStyle("-fx-background-color: white");
+                break;
+            case RIGHT:
+                pane.setAlignment(Pos.CENTER_RIGHT);
+                label.setStyle("-fx-background-color: #DCF8C6");
+                break;
+            case CENTER:
+                pane.setAlignment(Pos.CENTER);
+                label.setStyle("-fx-background-color: #f5e689");
+                break;
+        }
+        return pane;
+    }
+
+    private enum MessageDisplay {
+        CENTER,
+        LEFT,
+        RIGHT
     }
 }
