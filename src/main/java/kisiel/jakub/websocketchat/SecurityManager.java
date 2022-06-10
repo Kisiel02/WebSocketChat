@@ -1,6 +1,6 @@
 package kisiel.jakub.websocketchat;
 
-import kisiel.jakub.websocketchat.server.messages.ConfigMessage;
+import kisiel.jakub.websocketchat.messages.ConfigMessage;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;

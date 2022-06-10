@@ -6,7 +6,7 @@ import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializer;
 import kisiel.jakub.websocketchat.SecurityManager;
-import kisiel.jakub.websocketchat.server.messages.ConfigMessage;
+import kisiel.jakub.websocketchat.messages.ConfigMessage;
 import kisiel.jakub.websocketchat.messages.CustomMessage;
 import kisiel.jakub.websocketchat.messages.FileMessage;
 import org.apache.logging.log4j.LogManager;
