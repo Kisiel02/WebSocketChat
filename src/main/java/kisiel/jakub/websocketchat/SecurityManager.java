@@ -119,9 +119,10 @@ public class SecurityManager {
     @SneakyThrows
     public void setSessionKeyFromBytes(byte[] sessionKey) {
         this.sessionKey = new SecretKeySpec(sessionKey, 0, sessionKey.length, SESSION_CIPHER);
+        String sessionKeyString = Base64.getEncoder().encodeToString(
+            this.sessionKey.getEncoded());
         logger.info("Session key set:\n {}",
-            Base64.getEncoder().encodeToString(
-                this.sessionKey.getEncoded()));
+            sessionKeyString);
     }
 
     @SneakyThrows
@@ -133,9 +134,7 @@ public class SecurityManager {
     @SneakyThrows
     public byte[] decryptFileWithSessionKey(byte[] chunk, BlockMode blockMode) {
         Cipher cipher = getCipher(blockMode, Cipher.DECRYPT_MODE);
-        byte[] decoded = cipher.doFinal(chunk);
-        logger.debug("Decoded chunk: {}", new String(decoded));
-        return decoded;
+        return cipher.doFinal(chunk);
     }
 
     @SneakyThrows
@@ -144,7 +143,6 @@ public class SecurityManager {
 
         byte[] encoded = cipher.doFinal(message.getBytes());
         String toReturn = Base64.getEncoder().encodeToString(encoded);
-        //TODO add iv vector
         String decrypted = decryptStringWithSessionKey(toReturn, blockMode);
 
         logger.info("Original message: {}\n string to be send: {}\n decoded string: {}", message, toReturn, decrypted);
