@@ -23,8 +23,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
-import java.util.concurrent.ExecutionException;
-
 
 @Component
 public class ChatGuiController {
@@ -58,16 +56,15 @@ public class ChatGuiController {
     private SecurityManager.BlockMode mode = SecurityManager.BlockMode.CBC;
 
     @FXML
-    public void connectButtonAction(ActionEvent event) throws ExecutionException, InterruptedException {
+    public void connectButtonAction(ActionEvent event) {
         try {
             int portNumber = Integer.parseInt(port.getText());
             this.scrollPane.setPrefWidth(messages.getWidth());
             connectionManager.initConnection(portNumber, portOwn);
         } catch (NumberFormatException e) {
             logger.info(portAnother);
-            connectionManager.initConnection(portAnother, portOwn);;
+            connectionManager.initConnection(portAnother, portOwn);
         } catch (Exception e) {
-            //this.messages.add("Could not connect");
             addOwnLine("Could not connect");
         }
     }
@@ -76,7 +73,7 @@ public class ChatGuiController {
     public void sendButtonAction(ActionEvent event) {
         String text = textField.getText();
         CustomMessage customMessage = new CustomMessage(
-                text, CustomMessage.Type.TEXT, mode
+            text, CustomMessage.Type.TEXT, mode
         );
         this.connectionManager.sendMessage(customMessage);
         addOwnLine(text);
@@ -109,11 +106,11 @@ public class ChatGuiController {
         this.mode = SecurityManager.BlockMode.ECB;
     }
 
-    public void fileAction(ActionEvent actionEvent) throws Exception {
+    public void fileAction(ActionEvent actionEvent) {
         FileChooser fileChooser = new FileChooser();
-        Stage stage = (Stage)((Node) actionEvent.getSource()).getScene().getWindow();
+        Stage stage = (Stage) ((Node) actionEvent.getSource()).getScene().getWindow();
         File file = fileChooser.showOpenDialog(stage);
-        FileUpdateTask fileUpdateTask = this.connectionManager.sendFile(file, mode);
+        FileUpdateTask<Void> fileUpdateTask = this.connectionManager.sendFile(file, mode);
         fileProgress.setStyle("-fx-accent: #16507E");
         fileProgress.progressProperty().bind(fileUpdateTask.progressProperty());
         final Thread thread = new Thread(fileUpdateTask, "task-thread");
@@ -133,19 +130,19 @@ public class ChatGuiController {
         label.setPadding(new Insets(5));
         label.setStyle("-fx-background-radius: 6");
         HBox pane = new HBox(label);
-        switch (alignment){
-            case LEFT:
+        switch (alignment) {
+            case LEFT -> {
                 pane.setAlignment(Pos.CENTER_LEFT);
                 label.setStyle("-fx-background-color: white");
-                break;
-            case RIGHT:
+            }
+            case RIGHT -> {
                 pane.setAlignment(Pos.CENTER_RIGHT);
                 label.setStyle("-fx-background-color: #DCF8C6");
-                break;
-            case CENTER:
+            }
+            case CENTER -> {
                 pane.setAlignment(Pos.CENTER);
                 label.setStyle("-fx-background-color: #f5e689");
-                break;
+            }
         }
         return pane;
     }
