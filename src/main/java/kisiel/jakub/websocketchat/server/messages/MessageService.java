@@ -1,11 +1,10 @@
-package kisiel.jakub.websocketchat.server.Messages;
+package kisiel.jakub.websocketchat.server.messages;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializer;
-import kisiel.jakub.websocketchat.messages.ConfigDTO;
 import kisiel.jakub.websocketchat.messages.CustomMessage;
 import kisiel.jakub.websocketchat.messages.FileMessage;
 import kisiel.jakub.websocketchat.SecurityManager;
@@ -61,25 +60,25 @@ public class MessageService {
     }
 
     public void handleConfigMessage(String message) throws NoSuchAlgorithmException, InvalidKeySpecException {
-        ConfigDTO configDTO = gson.fromJson(message, ConfigDTO.class);
+        ConfigMessage configMessage = gson.fromJson(message, ConfigMessage.class);
 
-        if (configDTO.getType().equals(ConfigDTO.messageType.PUBLIC_KEY_AND_PORT)) {
+        if (configMessage.getType().equals(ConfigMessage.messageType.PUBLIC_KEY_AND_PORT)) {
             //First connection message, need to generate RSA keys and save received public key and connect back
             this.securityManager.initializeSecurity("RSA", 1024);
-            this.securityManager.saveForeignKey(configDTO);
-            this.connectionManager.backConnection(configDTO.getPort(), securityManager.getPublicKey());
-        } else if (configDTO.getType().equals(ConfigDTO.messageType.PUBLIC_KEY)) {
+            this.securityManager.saveForeignKey(configMessage);
+            this.connectionManager.backConnection(configMessage.getPort(), securityManager.getPublicKey());
+        } else if (configMessage.getType().equals(ConfigMessage.messageType.PUBLIC_KEY)) {
             //Received a back connection, need to send generated session key and store received public key
-            this.securityManager.saveForeignKey(configDTO);
+            this.securityManager.saveForeignKey(configMessage);
             this.connectionManager.exportSessionKey();
-        } else if (configDTO.getType().equals(ConfigDTO.messageType.SESSION_KEY)) {
+        } else if (configMessage.getType().equals(ConfigMessage.messageType.SESSION_KEY)) {
             //Received session key, decrypt it and store
-            byte[] encryptedSessionKey = configDTO.getSessionKey();
-            String sessionKeyString = Base64.getEncoder().encodeToString(configDTO.getSessionKey());
+            byte[] encryptedSessionKey = configMessage.getSessionKey();
+            String sessionKeyString = Base64.getEncoder().encodeToString(configMessage.getSessionKey());
             logger.debug("\nReceived encrypted session key: {}", sessionKeyString);
             byte[] decryptedSessionKey = this.securityManager.decryptWithPrivateKey(encryptedSessionKey);
             this.securityManager.setSessionKeyFromBytes(decryptedSessionKey);
-            this.securityManager.setIv(new IvParameterSpec(configDTO.getIvVector()));
+            this.securityManager.setIv(new IvParameterSpec(configMessage.getIvVector()));
             String ivString = Base64.getEncoder().encodeToString(securityManager.getIv().getIV());
             logger.info("IV vector key: {}", ivString);
         }
@@ -102,7 +101,9 @@ public class MessageService {
             logger.error("Could not write to file", e);
         }
 
-//        if(chunk.isDone())
+        if(chunk.isDone()) {
+
+        }
     }
 }
 

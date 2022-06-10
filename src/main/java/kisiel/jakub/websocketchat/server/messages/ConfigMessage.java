@@ -1,4 +1,4 @@
-package kisiel.jakub.websocketchat.messages;
+package kisiel.jakub.websocketchat.server.messages;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,7 +9,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class ConfigDTO {
+public class ConfigMessage {
 
     private byte[] publicKey;
 

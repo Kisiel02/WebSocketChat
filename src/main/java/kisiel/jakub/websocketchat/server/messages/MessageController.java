@@ -1,4 +1,4 @@
-package kisiel.jakub.websocketchat.server.Messages;
+package kisiel.jakub.websocketchat.server.messages;
 
 import com.google.gson.Gson;
 import kisiel.jakub.websocketchat.messages.CustomMessage;

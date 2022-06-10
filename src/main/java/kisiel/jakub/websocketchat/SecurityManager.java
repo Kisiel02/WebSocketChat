@@ -1,6 +1,6 @@
 package kisiel.jakub.websocketchat;
 
-import kisiel.jakub.websocketchat.messages.ConfigDTO;
+import kisiel.jakub.websocketchat.server.messages.ConfigMessage;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -86,10 +86,10 @@ public class SecurityManager {
         this.sessionKey = symmetricGenerator.generateKey();
     }
 
-    public void saveForeignKey(ConfigDTO configDTO) throws InvalidKeySpecException {
+    public void saveForeignKey(ConfigMessage configMessage) throws InvalidKeySpecException {
         try {
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-            EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(configDTO.getPublicKey());
+            EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(configMessage.getPublicKey());
             this.setForeignKey(keyFactory.generatePublic(publicKeySpec));
             logger.debug("Foreign public key:\n {}", foreignKey);
         } catch (NoSuchAlgorithmException e) {

@@ -6,7 +6,7 @@ import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializer;
 import kisiel.jakub.websocketchat.SecurityManager;
-import kisiel.jakub.websocketchat.messages.ConfigDTO;
+import kisiel.jakub.websocketchat.server.messages.ConfigMessage;
 import kisiel.jakub.websocketchat.messages.CustomMessage;
 import kisiel.jakub.websocketchat.messages.FileMessage;
 import org.apache.logging.log4j.LogManager;
@@ -71,8 +71,8 @@ public class ConnectionManager {
         this.stompSession.send(MESSAGES_LOCATION, gson.toJson(customMessage));
     }
 
-    public void sendConfig(ConfigDTO configDTO) {
-        String message = gson.toJson(configDTO);
+    public void sendConfig(ConfigMessage configMessage) {
+        String message = gson.toJson(configMessage);
         this.stompSession.send(CONFIG_LOCATION, message);
     }
 
@@ -120,28 +120,28 @@ public class ConnectionManager {
 
     public void exportSessionKey() {
         SecretKey sessionKey = this.securityManager.getSessionKey();
-        ConfigDTO configDTO = new ConfigDTO();
+        ConfigMessage configMessage = new ConfigMessage();
         byte[] encryptedSessionKey = this.securityManager.encryptWithForeignKey(sessionKey.getEncoded());
-        configDTO.setSessionKey(encryptedSessionKey);
-        configDTO.setType(ConfigDTO.messageType.SESSION_KEY);
-        configDTO.setIvVector(securityManager.getIv().getIV());
+        configMessage.setSessionKey(encryptedSessionKey);
+        configMessage.setType(ConfigMessage.messageType.SESSION_KEY);
+        configMessage.setIvVector(securityManager.getIv().getIV());
         String sessionKeyString = Base64.getEncoder().encodeToString(encryptedSessionKey);
         logger.debug("\nExporting encrypted session key: {}", sessionKeyString);
-        sendConfig(configDTO);
+        sendConfig(configMessage);
     }
 
     private void exportPublicKeyAndPort(PublicKey publicKey, int ownPort) {
-        ConfigDTO configDTO = new ConfigDTO();
-        configDTO.setPublicKey(publicKey.getEncoded());
-        configDTO.setPort(ownPort);
-        configDTO.setType(ConfigDTO.messageType.PUBLIC_KEY_AND_PORT);
-        this.sendConfig(configDTO);
+        ConfigMessage configMessage = new ConfigMessage();
+        configMessage.setPublicKey(publicKey.getEncoded());
+        configMessage.setPort(ownPort);
+        configMessage.setType(ConfigMessage.messageType.PUBLIC_KEY_AND_PORT);
+        this.sendConfig(configMessage);
     }
 
     private void exportPublicKey(PublicKey publicKey) {
-        ConfigDTO configDTO = new ConfigDTO();
-        configDTO.setPublicKey(publicKey.getEncoded());
-        configDTO.setType(ConfigDTO.messageType.PUBLIC_KEY);
-        this.sendConfig(configDTO);
+        ConfigMessage configMessage = new ConfigMessage();
+        configMessage.setPublicKey(publicKey.getEncoded());
+        configMessage.setType(ConfigMessage.messageType.PUBLIC_KEY);
+        this.sendConfig(configMessage);
     }
 }
