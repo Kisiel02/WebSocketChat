@@ -36,7 +36,7 @@ public class MyStompSessionHandler extends StompSessionHandlerAdapter {
     public void handleFrame(StompHeaders headers, Object payload) {
         Gson gson = new Gson();
         CustomMessage message = gson.fromJson(String.valueOf(payload), CustomMessage.class);
-        this.logger.info(message.getText());
-        this.chatGuiController.addOwnLine(message.getText());
+        this.logger.info(message.getContent());
+        this.chatGuiController.addOwnLine(message.getContent());
     }
 }

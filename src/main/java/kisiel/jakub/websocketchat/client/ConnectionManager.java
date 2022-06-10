@@ -1,10 +1,6 @@
 package kisiel.jakub.websocketchat.client;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSerializer;
 import kisiel.jakub.websocketchat.SecurityManager;
 import kisiel.jakub.websocketchat.messages.ConfigMessage;
 import kisiel.jakub.websocketchat.messages.CustomMessage;
@@ -14,6 +10,7 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.messaging.converter.GsonMessageConverter;
+import org.springframework.messaging.simp.stomp.ConnectionLostException;
 import org.springframework.messaging.simp.stomp.StompSession;
 import org.springframework.messaging.simp.stomp.StompSessionHandler;
 import org.springframework.stereotype.Component;
@@ -21,7 +18,6 @@ import org.springframework.web.socket.client.WebSocketClient;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
 
-import javax.annotation.PostConstruct;
 import javax.crypto.SecretKey;
 import java.io.File;
 import java.security.NoSuchAlgorithmException;
@@ -50,23 +46,16 @@ public class ConnectionManager {
     private Gson gson;
 
     @Autowired
-    public ConnectionManager(@Lazy ChatGuiController chatGuiController, SecurityManager securityManager) {
+    public ConnectionManager(@Lazy ChatGuiController chatGuiController, SecurityManager securityManager, Gson gson) {
         this.chatGuiController = chatGuiController;
         this.securityManager = securityManager;
-    }
-
-    @PostConstruct
-    public void initGson() {
-        GsonBuilder builder = new GsonBuilder();
-        builder.registerTypeAdapter(byte[].class, (JsonSerializer<byte[]>) (src, typeOfSrc, context) -> new JsonPrimitive(Base64.getEncoder().encodeToString(src)));
-        builder.registerTypeAdapter(byte[].class, (JsonDeserializer<byte[]>) (json, typeOfT, context) -> Base64.getDecoder().decode(json.getAsString()));
-        this.gson = builder.create();
+        this.gson = gson;
     }
 
     public void sendMessage(CustomMessage customMessage) {
-        String text = customMessage.getText();
+        String text = customMessage.getContent();
         String encrypted = securityManager.encryptStringWithSessionKey(text, customMessage.getMode());
-        customMessage.setText(encrypted);
+        customMessage.setContent(encrypted);
         logger.info("Sending message {}", encrypted);
         this.stompSession.send(MESSAGES_LOCATION, gson.toJson(customMessage));
     }
@@ -81,7 +70,7 @@ public class ConnectionManager {
         this.stompSession.send(FILE_LOCATION, message);
     }
 
-    public void initConnection(int anotherPort, int ownPort) {
+    public void initConnection(int anotherPort, int ownPort) throws ConnectionLostException {
         if (connect(anotherPort)) {
             try {
                 securityManager.initializeSecurity("RSA", 1024, "AES", 128);
@@ -89,7 +78,10 @@ public class ConnectionManager {
             } catch (NoSuchAlgorithmException e) {
                 logger.error("Wrong algorithm name", e);
             }
+        } else {
+            throw new ConnectionLostException("Could not connect");
         }
+
     }
 
     //Connect back to the sender of config message, export your public key
