@@ -12,7 +12,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class CustomMessage {
 
-    private String text;
+    private String content;
 
     private Type type;
 
@@ -20,9 +20,7 @@ public class CustomMessage {
 
     public enum Type {
         TEXT,
-        CONNECT,
-        INFO,
-        PUBLIC_KEY
+        FILE_CONFIRM
     }
 
 }

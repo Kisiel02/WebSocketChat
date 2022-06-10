@@ -29,8 +29,8 @@ public class MessageController {
     public void textMessage(String message) {
         Gson gson = new Gson();
         CustomMessage textMessage = gson.fromJson(message, CustomMessage.class);
-        logger.info("Received message: {}", textMessage.getText());
-        this.service.handleTextMessage(textMessage);
+        logger.info("Received message: {}", textMessage.getContent());
+        this.service.handleCustomMessage(textMessage);
     }
 
     @MessageMapping("/chat/config")

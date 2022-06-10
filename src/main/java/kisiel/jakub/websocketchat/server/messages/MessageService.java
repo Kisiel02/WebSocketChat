@@ -1,22 +1,17 @@
 package kisiel.jakub.websocketchat.server.messages;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSerializer;
-import kisiel.jakub.websocketchat.messages.ConfigMessage;
-import kisiel.jakub.websocketchat.messages.CustomMessage;
-import kisiel.jakub.websocketchat.messages.FileMessage;
 import kisiel.jakub.websocketchat.SecurityManager;
 import kisiel.jakub.websocketchat.client.ChatGuiController;
 import kisiel.jakub.websocketchat.client.ConnectionManager;
+import kisiel.jakub.websocketchat.messages.ConfigMessage;
+import kisiel.jakub.websocketchat.messages.CustomMessage;
+import kisiel.jakub.websocketchat.messages.FileMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import javax.crypto.spec.IvParameterSpec;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -41,23 +36,25 @@ public class MessageService {
     private Gson gson;
 
     @Autowired
-    public MessageService(ChatGuiController chatGuiController, SecurityManager securityManager, ConnectionManager connectionManager) {
+    public MessageService(ChatGuiController chatGuiController, SecurityManager securityManager, ConnectionManager connectionManager, Gson gson) {
         this.chatGuiController = chatGuiController;
         this.securityManager = securityManager;
         this.connectionManager = connectionManager;
+        this.gson = gson;
     }
 
-    @PostConstruct
-    public void initGson() {
-        GsonBuilder builder = new GsonBuilder();
-        builder.registerTypeAdapter(byte[].class, (JsonSerializer<byte[]>) (src, typeOfSrc, context) -> new JsonPrimitive(Base64.getEncoder().encodeToString(src)));
-        builder.registerTypeAdapter(byte[].class, (JsonDeserializer<byte[]>) (json, typeOfT, context) -> Base64.getDecoder().decode(json.getAsString()));
-        this.gson = builder.create();
-    }
+    public void handleCustomMessage(CustomMessage message) {
+        switch (message.getType()) {
+            case TEXT -> {
+                String text = securityManager.decryptStringWithSessionKey(message.getContent(), message.getMode());
+                this.chatGuiController.addForeignLine(text);
+            }
+            case FILE_CONFIRM -> {
+                String filename = securityManager.decryptStringWithSessionKey(message.getContent(), message.getMode());
+                this.chatGuiController.addInfoLine("File " + filename + " send successfully");
+            }
+        }
 
-    public void handleTextMessage(CustomMessage message) {
-        String text = securityManager.decryptStringWithSessionKey(message.getText(), message.getMode());
-        this.chatGuiController.addForeignLine(text);
     }
 
     public void handleConfigMessage(String message) throws NoSuchAlgorithmException, InvalidKeySpecException {
@@ -102,8 +99,14 @@ public class MessageService {
             logger.error("Could not write to file", e);
         }
 
-        if(chunk.isDone()) {
+        if (chunk.isDone()) {
+            CustomMessage customMessage = new CustomMessage();
+            customMessage.setType(CustomMessage.Type.FILE_CONFIRM);
+            customMessage.setContent(chunk.getFileName());
+            customMessage.setMode(chunk.getBlockMode());
 
+            connectionManager.sendMessage(customMessage);
+            chatGuiController.addInfoLine("File " + chunk.getFileName() + " saved successfully");
         }
     }
 }
