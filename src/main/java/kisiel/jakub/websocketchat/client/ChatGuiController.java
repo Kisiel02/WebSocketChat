@@ -110,10 +110,10 @@ public class ChatGuiController {
         Stage stage = (Stage) ((Node) actionEvent.getSource()).getScene().getWindow();
         File file = fileChooser.showOpenDialog(stage);
         if (file != null) {
-            FileUpdateTask<Void> fileUpdateTask = this.connectionManager.sendFile(file, mode);
+            FileUploadTask<Void> fileUploadTask = this.connectionManager.sendFile(file, mode);
             fileProgress.setStyle("-fx-accent: #16507E");
-            fileProgress.progressProperty().bind(fileUpdateTask.progressProperty());
-            final Thread thread = new Thread(fileUpdateTask, "task-thread");
+            fileProgress.progressProperty().bind(fileUploadTask.progressProperty());
+            final Thread thread = new Thread(fileUploadTask, "task-thread");
             thread.setDaemon(true);
             fileProgress.progressProperty().addListener(observable -> {
                 if (fileProgress.getProgress() >= 0.99d) {

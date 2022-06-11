@@ -4,13 +4,19 @@ import javafx.concurrent.Task;
 import kisiel.jakub.websocketchat.SecurityManager;
 import kisiel.jakub.websocketchat.messages.FileMessage;
 import lombok.AllArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.time.Duration;
+import java.time.Instant;
 
 @AllArgsConstructor
-public class FileUpdateTask<T> extends Task<T> {
+public class FileUploadTask<T> extends Task<T> {
+
+    private final static Logger logger = LoggerFactory.getLogger(FileUploadTask.class);
 
     private final int bufferSize;
 
@@ -28,6 +34,7 @@ public class FileUpdateTask<T> extends Task<T> {
         int read;
         long alreadyRead = 0;
         byte[] buffer = new byte[bufferSize];
+        Instant start = Instant.now();
         try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(file))) {
             while ((read = in.read(buffer)) > 0) {
                 FileMessage fileMessage = new FileMessage();
@@ -56,7 +63,9 @@ public class FileUpdateTask<T> extends Task<T> {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
+        Instant end = Instant.now();
+        long timeElapsed = Duration.between(start, end).toMillis();
+        logger.info("Time of file encrypting and sending with {} mode, size {} bytes: {} ms", mode, file.length(), timeElapsed);
         return null;
     }
 }

@@ -20,6 +20,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Base64;
 
 @Service
@@ -34,6 +36,8 @@ public class MessageService {
     private final ConnectionManager connectionManager;
 
     private Gson gson;
+
+    private Instant start;
 
     @Autowired
     public MessageService(ChatGuiController chatGuiController, SecurityManager securityManager, ConnectionManager connectionManager, Gson gson) {
@@ -78,7 +82,7 @@ public class MessageService {
             this.securityManager.setSessionKeyFromBytes(decryptedSessionKey);
             this.securityManager.setIv(new IvParameterSpec(configMessage.getIvVector()));
             String ivString = Base64.getEncoder().encodeToString(securityManager.getIv().getIV());
-            logger.info("IV vector key: {}", ivString);
+            logger.debug("IV vector key: {}", ivString);
         }
     }
 
@@ -88,6 +92,11 @@ public class MessageService {
 
         // if first chunk, create file, otherwise append
         boolean append = chunk.getCounter() != 0;
+        //Instant start = Instant.now();
+
+        if(chunk.getCounter() == 0) {
+            start = Instant.now();
+        }
 
         try (BufferedOutputStream output = new BufferedOutputStream(new FileOutputStream(file, append))) {
             byte[] decrypted = securityManager.decryptFileWithSessionKey(chunk.getChunk(), chunk.getBlockMode());
@@ -100,6 +109,9 @@ public class MessageService {
         }
 
         if (chunk.isDone()) {
+            Instant end = Instant.now();
+            long timeElapsed = Duration.between(start, end).toMillis();
+            logger.info("Time of file saving with {} mode, size {} bytes: {} ms", chunk.getBlockMode(), file.length(), timeElapsed);
             CustomMessage customMessage = new CustomMessage();
             customMessage.setType(CustomMessage.Type.FILE_CONFIRM);
             customMessage.setContent(chunk.getFileName());

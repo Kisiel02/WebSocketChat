@@ -29,7 +29,7 @@ public class MessageController {
     public void textMessage(String message) {
         Gson gson = new Gson();
         CustomMessage textMessage = gson.fromJson(message, CustomMessage.class);
-        logger.info("Received message: {}", textMessage.getContent());
+        logger.debug("Received message: {}", textMessage.getContent());
         this.service.handleCustomMessage(textMessage);
     }
 

@@ -44,6 +44,10 @@ public class SecurityManager {
 
     private static String CBC = "AES/CBC/PKCS5Padding";
 
+    private static String PUBLIC_KEY_STORAGE = "/storage/publicKey/";
+
+    private static String PRIVATE_KEY_STORAGE = "AES/CBC/PKCS5Padding";
+
     private static int SYMMETRIC_KEY_SIZE = 128;
 
     private static int ASYMMETRIC_KEY_SIZE = 2048;
@@ -73,9 +77,9 @@ public class SecurityManager {
         new SecureRandom().nextBytes(ivVector);
         this.iv = new IvParameterSpec(ivVector);
         String sessionKeyString = Base64.getEncoder().encodeToString(sessionKey.getEncoded());
-        logger.info("Session key: {}", sessionKeyString);
+        logger.debug("Session key: {}", sessionKeyString);
         String ivVectorString = Base64.getEncoder().encodeToString(iv.getIV());
-        logger.info("IV vector: {}", ivVectorString);
+        logger.debug("IV vector: {}", ivVectorString);
 
     }
 
